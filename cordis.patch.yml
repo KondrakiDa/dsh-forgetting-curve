@@ -1,0 +1,8 @@
+# dsh-memory-curve 的 loader entry。
+#
+# id 就是设置命名空间名。v0.1 还没有 Config schema，所以暂时只挂载、不暴露设置项；
+# v0.2 会在这里加一个带 volatile 字段的 schema，让参数能在 DSH 设置页里改。
+- insert:
+    - id: memory-curve
+      name: dsh-memory-curve
+      config: {}

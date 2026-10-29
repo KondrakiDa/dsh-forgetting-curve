@@ -1,0 +1,21 @@
+# 依赖与运行产物
+node_modules/
+*.log
+
+# 本地记忆库（跑起来就会生成，不该进版本库）
+memory-curve/
+items.jsonl
+snapshot.json
+params.json
+params-history.jsonl
+env.json
+
+# 编辑器 / 系统
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# 备份
+*.bak
+*.bak-*

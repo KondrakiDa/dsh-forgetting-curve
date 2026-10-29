@@ -1,0 +1,64 @@
+{
+  "name": "dsh-memory-curve",
+  "version": "0.1.0",
+  "description": "遗忘曲线记忆：给 DSH 加一层带强度衰减与复习调度的长期记忆。决定「什么时候该想起哪件旧事」，而不是「记住什么」。按艾宾浩斯节奏分配每轮的注入带宽，带本地台账与调参页。",
+  "type": "module",
+  "main": "lib/index.js",
+  "exports": {
+    ".": "./lib/index.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib",
+    "cordis.patch.yml",
+    "README.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "deepseek-harness",
+    "memory",
+    "spaced-repetition",
+    "ebbinghaus",
+    "forgetting-curve"
+  ],
+  "license": "MIT",
+  "author": "Kondraki Da",
+  "engines": {
+    "node": ">=22.19"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": ">=4.0.1",
+    "@deepseek-ai/dsh-system-prompt": ">=0.2.0",
+    "@deepseek-ai/dsh-tools": ">=0.2.0"
+  },
+  "peerDependenciesMeta": {
+    "@deepseek-ai/cordis": {
+      "optional": true
+    },
+    "@deepseek-ai/dsh-system-prompt": {
+      "optional": true
+    },
+    "@deepseek-ai/dsh-tools": {
+      "optional": true
+    }
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
+  "dshGo": {
+    "v": 1,
+    "title": {
+      "zh": "遗忘曲线记忆",
+      "en": "Memory Curve"
+    },
+    "icon": "brain",
+    "description": {
+      "zh": "按艾宾浩斯节奏决定哪件旧事该被重新想起。带强度衰减、复习调度、本地台账。",
+      "en": "Spaced repetition for agent memory: strength decay, review scheduling, local ledger."
+    }
+  }
+}

@@ -1,0 +1,611 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>遗忘曲线记忆 · 台账</title>
+<style>
+  :root {
+    --bg: #0f1115;
+    --panel: #161920;
+    --panel-2: #1d222b;
+    --line: #272d38;
+    --ink: #e6e9ef;
+    --muted: #8b94a5;
+    --dim: #5d6675;
+    --acc: #6aa4ff;
+    --ok: #3ecf8e;
+    --warn: #f5a623;
+    --bad: #ff6b6b;
+    --purple: #b18cff;
+    --r: 10px;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    background: var(--bg); color: var(--ink);
+    font: 14px/1.6 system-ui, -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif;
+    display: flex; flex-direction: column;
+  }
+  header {
+    display: flex; align-items: center; gap: 14px;
+    padding: 14px 20px; border-bottom: 1px solid var(--line);
+    background: var(--panel);
+  }
+  header h1 { font-size: 15px; font-weight: 650; margin: 0; letter-spacing: -0.01em; }
+  .meta { color: var(--muted); font-size: 12px; }
+  .spacer { flex: 1; }
+  button {
+    font: inherit; font-size: 13px; color: var(--ink);
+    background: var(--panel-2); border: 1px solid var(--line);
+    border-radius: 8px; padding: 6px 12px; cursor: pointer;
+    transition: border-color .15s, background .15s;
+  }
+  button:hover { border-color: #3a4353; background: #232935; }
+  button.primary { background: #23406e; border-color: #33578f; }
+  button.primary:hover { background: #2a4c82; }
+  button.danger { color: var(--bad); }
+  button:disabled { opacity: .45; cursor: not-allowed; }
+
+  .stats {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;
+    padding: 16px 20px 4px;
+  }
+  .stat { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 12px 14px; }
+  .stat .k { color: var(--muted); font-size: 11.5px; letter-spacing: .04em; }
+  .stat .v { font-size: 24px; font-weight: 650; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+
+  nav.tabs { display: flex; gap: 4px; padding: 14px 20px 0; }
+  nav.tabs button {
+    border: none; background: transparent; color: var(--muted);
+    padding: 8px 14px; border-radius: 8px 8px 0 0; border-bottom: 2px solid transparent;
+  }
+  nav.tabs button.on { color: var(--ink); border-bottom-color: var(--acc); background: var(--panel); }
+
+  main { flex: 1; min-height: 0; padding: 0 20px 20px; overflow: auto; }
+  .view { display: none; }
+  .view.on { display: block; }
+
+  .toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 12px 0; }
+  .chip {
+    border-radius: 999px; padding: 4px 11px; font-size: 12px;
+    border: 1px solid var(--line); background: transparent; color: var(--muted);
+  }
+  .chip.on { background: #22304a; border-color: #35548a; color: #cfe0ff; }
+  select, input[type=text], input[type=number], textarea {
+    font: inherit; font-size: 13px; color: var(--ink);
+    background: var(--panel-2); border: 1px solid var(--line);
+    border-radius: 8px; padding: 6px 9px;
+  }
+  textarea { width: 100%; resize: vertical; }
+  input[type=number] { width: 92px; font-variant-numeric: tabular-nums; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  thead th {
+    text-align: left; color: var(--muted); font-weight: 500; font-size: 11.5px;
+    letter-spacing: .04em; padding: 8px 10px; border-bottom: 1px solid var(--line);
+    position: sticky; top: 0; background: var(--bg);
+  }
+  tbody td { padding: 9px 10px; border-bottom: 1px solid #1c2129; vertical-align: top; }
+  tbody tr { cursor: pointer; }
+  tbody tr:hover td { background: #171b23; }
+  .mono { font-family: ui-monospace, "Cascadia Code", Consolas, monospace; font-size: 12px; }
+  .id { color: var(--dim); }
+  .txt { color: var(--ink); }
+  .num { font-variant-numeric: tabular-nums; }
+
+  .badge {
+    display: inline-block; font-size: 11px; padding: 2px 7px; border-radius: 5px;
+    border: 1px solid transparent; white-space: nowrap;
+  }
+  .st-learning { color: #8fbaff; background: #1b2a44; border-color: #27406a; }
+  .st-review   { color: #74e0b0; background: #142c23; border-color: #1f4737; }
+  .st-dormant  { color: #9aa3b2; background: #20242c; border-color: #2e3440; }
+  .st-archived { color: #6b7382; background: #1a1d23; border-color: #262b34; }
+  .st-superseded { color: #6b7382; background: #1a1d23; border-color: #262b34; }
+
+  .k-fact       { color: #8fbaff; }
+  .k-preference { color: #f0b95c; }
+  .k-event      { color: #74e0b0; }
+  .k-relation   { color: #c9a2ff; }
+  .k-slang      { color: #7fd8e8; }
+  .k-vow        { color: #ff9db1; }
+
+  .risk { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 6px; }
+  .r-critical { background: var(--bad); }
+  .r-overdue  { background: var(--warn); }
+  .r-due      { background: #e8d15a; }
+  .r-fresh    { background: var(--ok); }
+  .r-dormant  { background: var(--dim); }
+  .r-pinned   { background: var(--purple); }
+  .r-gone     { background: #3a404b; }
+
+  /* 抽屉 */
+  #drawer {
+    position: fixed; top: 0; right: 0; width: min(440px, 92vw); height: 100%;
+    background: var(--panel); border-left: 1px solid var(--line);
+    transform: translateX(100%); transition: transform .22s ease;
+    display: flex; flex-direction: column; z-index: 20;
+  }
+  #drawer.on { transform: translateX(0); }
+  #drawer .dh { display: flex; align-items: center; gap: 10px; padding: 14px 16px; border-bottom: 1px solid var(--line); }
+  #drawer .dh b { font-size: 14px; font-weight: 600; }
+  #drawer .db { padding: 14px 16px; overflow: auto; flex: 1; }
+  #drawer .df { padding: 12px 16px; border-top: 1px solid var(--line); display: flex; flex-wrap: wrap; gap: 8px; }
+  .kv { display: grid; grid-template-columns: 88px 1fr; gap: 6px 10px; font-size: 12.5px; margin: 10px 0 16px; }
+  .kv .k { color: var(--muted); }
+  .kv .v { font-variant-numeric: tabular-nums; }
+  canvas { width: 100%; height: 150px; display: block; background: var(--panel-2); border-radius: 8px; }
+  .legend { color: var(--dim); font-size: 11px; margin-top: 6px; }
+
+  /* 调参 */
+  .group { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); margin: 12px 0; overflow: hidden; }
+  .group > h3 { margin: 0; padding: 11px 14px; font-size: 13px; font-weight: 600; background: var(--panel-2); border-bottom: 1px solid var(--line); }
+  .row { display: grid; grid-template-columns: 1fr auto; gap: 10px 16px; align-items: center; padding: 10px 14px; border-bottom: 1px solid #1c2129; }
+  .row:last-child { border-bottom: none; }
+  .row .lbl { font-size: 13px; }
+  .row .hint { color: var(--dim); font-size: 11.5px; margin-top: 2px; }
+  .row .ctl { display: flex; gap: 8px; align-items: center; }
+  .saved { color: var(--ok); font-size: 12px; }
+  .err { color: var(--bad); font-size: 12.5px; padding: 0 14px 10px; }
+
+  .toast {
+    position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%) translateY(20px);
+    background: #232a36; border: 1px solid #333c4c; color: var(--ink);
+    padding: 9px 16px; border-radius: 9px; font-size: 13px; opacity: 0;
+    transition: opacity .2s, transform .2s; pointer-events: none; z-index: 30;
+  }
+  .toast.on { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .empty { color: var(--dim); padding: 30px 4px; text-align: center; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>遗忘曲线记忆</h1>
+  <span class="meta" id="meta">加载中…</span>
+  <span class="spacer"></span>
+  <button id="btn-refresh">刷新</button>
+</header>
+
+<section class="stats">
+  <div class="stat"><div class="k">条目总数</div><div class="v" id="s-total">–</div></div>
+  <div class="stat"><div class="k">现在到期</div><div class="v" id="s-due">–</div></div>
+  <div class="stat"><div class="k">平均 RS</div><div class="v" id="s-rs">–</div></div>
+  <div class="stat"><div class="k">dormant</div><div class="v" id="s-dormant">–</div></div>
+</section>
+
+<nav class="tabs">
+  <button data-tab="ledger" class="on">台账</button>
+  <button data-tab="params">调参</button>
+</nav>
+
+<main>
+  <div class="view on" id="view-ledger">
+    <div class="toolbar" id="filters">
+      <button class="chip on" data-state="">全部</button>
+      <button class="chip" data-state="learning">learning</button>
+      <button class="chip" data-state="review">review</button>
+      <button class="chip" data-state="dormant">dormant</button>
+      <span style="width:10px"></span>
+      <select id="f-kind"><option value="">所有 kind</option></select>
+      <select id="f-key"><option value="">所有会话</option></select>
+      <select id="f-sort">
+        <option value="nextAt">按下次唤醒</option>
+        <option value="rs">按 RS 从低到高</option>
+        <option value="kind">按 kind</option>
+        <option value="state">按 state</option>
+      </select>
+      <input type="text" id="f-q" placeholder="搜文本 / id" style="width:180px">
+      <span class="spacer"></span>
+      <button id="btn-add">新增条目</button>
+    </div>
+    <div style="overflow:auto; max-height: calc(100vh - 300px)">
+      <table>
+        <thead><tr>
+          <th style="width:16px"></th><th style="width:96px">ID</th><th style="width:96px">kind</th>
+          <th style="width:86px">state</th><th style="width:60px">RS</th><th style="width:80px">下次</th>
+          <th style="width:50px">注入</th><th>文本</th>
+        </tr></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+      <div class="empty" id="empty" hidden>没有符合条件的记忆</div>
+    </div>
+  </div>
+
+  <div class="view" id="view-params">
+    <div class="toolbar">
+      <span class="meta" id="param-meta"></span>
+      <span class="spacer"></span>
+      <button id="btn-preview">试算</button>
+      <button id="btn-save" class="primary">保存</button>
+      <button id="btn-recompute" title="按新参数把所有条目的下次唤醒全部重排">保存并全量重算</button>
+    </div>
+    <div id="param-groups"></div>
+    <div class="empty" id="preview-out" hidden></div>
+  </div>
+</main>
+
+<aside id="drawer">
+  <div class="dh">
+    <b id="d-title">详情</b>
+    <span class="spacer"></span>
+    <button id="d-close">关闭</button>
+  </div>
+  <div class="db" id="d-body"></div>
+  <div class="df" id="d-actions"></div>
+</aside>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const $ = (s) => document.querySelector(s);
+const API_BASE = location.pathname.replace(/\/$/, '') + '/';
+const api = async (path, opts = {}) => {
+  const res = await fetch(API_BASE + String(path).replace(/^\/+/, ''), {
+    headers: { 'content-type': 'application/json' },
+    ...opts,
+    body: opts.body ? JSON.stringify(opts.body) : undefined,
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+  return data;
+};
+
+let state = { items: [], params: null, keys: [], f: { state: '', kind: '', key: '', sort: 'nextAt', q: '' }, current: null };
+let paramDraft = null;
+
+// ---------- 工具 ----------
+const KIND_ORDER = ['fact', 'preference', 'event', 'relation', 'slang', 'vow'];
+const fmtSpan = (ms) => {
+  if (ms == null) return '—';
+  const abs = Math.abs(ms), sign = ms < 0 ? '−' : '+';
+  if (abs < 60000) return sign + Math.round(abs / 1000) + 's';
+  if (abs < 3600000) return sign + Math.round(abs / 60000) + 'm';
+  if (abs < 86400000) return sign + (abs / 3600000).toFixed(1) + 'h';
+  return sign + (abs / 86400000).toFixed(1) + 'd';
+};
+const fmtTime = (ms) => (ms ? new Date(ms).toLocaleString('zh-CN', { hour12: false }) : '—');
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+function toast(msg, ms = 2200) {
+  const el = $('#toast');
+  el.textContent = msg;
+  el.classList.add('on');
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.classList.remove('on'), ms);
+}
+
+// ---------- 加载 ----------
+async function loadOverview() {
+  const d = await api('/api/overview');
+  const s = d.stats;
+  $('#s-total').textContent = s.total;
+  $('#s-due').textContent = s.dueNow;
+  $('#s-rs').textContent = s.avgRs.toFixed(2);
+  $('#s-dormant').textContent = s.dormant;
+  $('#meta').textContent = `库 ${d.info.root} · 参数 v${d.paramVersion} · 事件 ${d.info.lastSeq}`;
+
+  state.keys = d.keys;
+  const sel = $('#f-key');
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">所有会话</option>' +
+    d.keys.map((k) => `<option value="${esc(k)}">${esc(k)}</option>`).join('');
+  sel.value = cur;
+
+  if (!state.params) {
+    state.params = d.params;
+    paramDraft = JSON.parse(JSON.stringify(d.params));
+    buildParamGroups();
+  }
+  $('#param-meta').textContent = `当前 v${d.paramVersion} · hash ${d.paramHash}`;
+}
+
+async function loadItems() {
+  const p = new URLSearchParams();
+  if (state.f.state) p.set('state', state.f.state);
+  if (state.f.kind) p.set('kind', state.f.kind);
+  if (state.f.key) p.set('key', state.f.key);
+  p.set('sort', state.f.sort);
+  const d = await api('/api/items?' + p.toString());
+  let items = d.items;
+  if (state.f.q) {
+    const q = state.f.q.toLowerCase();
+    items = items.filter((it) => it.text.toLowerCase().includes(q) || it.id.includes(q));
+  }
+  state.items = items;
+  renderTable();
+}
+
+function renderTable() {
+  const tb = $('#tbody');
+  tb.innerHTML = '';
+  $('#empty').hidden = state.items.length > 0;
+  for (const it of state.items) {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><span class="risk r-${it.risk}"></span></td>
+      <td class="mono id">${esc(it.id.slice(2, 8))}</td>
+      <td class="mono k-${it.kind}">${esc(it.kind)}</td>
+      <td><span class="badge st-${it.state}">${esc(it.state)}</span></td>
+      <td class="num">${it.rs.toFixed(2)}</td>
+      <td class="num" style="color:${it.dueNow ? 'var(--warn)' : 'var(--muted)'}">${fmtSpan(it.nextInMs)}</td>
+      <td class="num" style="color:var(--dim)">${it.injectCount}</td>
+      <td class="txt">${esc(it.text)}</td>`;
+    tr.onclick = () => openDrawer(it.id);
+    tb.appendChild(tr);
+  }
+}
+
+// ---------- 抽屉 ----------
+async function openDrawer(id) {
+  const d = await api('/api/item?id=' + encodeURIComponent(id));
+  state.current = d.item;
+  renderDrawer(d.item);
+  $('#drawer').classList.add('on');
+}
+
+function renderDrawer(it) {
+  $('#d-title').textContent = `${it.kind} · ${it.state}`;
+  $('#d-body').innerHTML = `
+    <textarea id="d-text" rows="3">${esc(it.text)}</textarea>
+    <div class="kv">
+      <div class="k">id</div><div class="v mono">${esc(it.id)}</div>
+      <div class="k">会话</div><div class="v mono">${esc(it.key)}</div>
+      <div class="k">SS</div><div class="v">${it.ssDays} 天</div>
+      <div class="k">RS</div><div class="v">${it.rs} <span class="risk r-${it.risk}" style="margin-left:8px"></span>${it.risk}</div>
+      <div class="k">成功次数</div><div class="v">${it.n}</div>
+      <div class="k">连续 miss</div><div class="v">${it.misses}</div>
+      <div class="k">注入次数</div><div class="v">${it.injectCount}</div>
+      <div class="k">创建</div><div class="v">${fmtTime(it.createdAt)}</div>
+      <div class="k">上次复习</div><div class="v">${fmtTime(it.lastReviewAt)}</div>
+      <div class="k">下次唤醒</div><div class="v">${fmtTime(it.nextAt)} <span style="color:var(--muted)">(${fmtSpan(it.nextInMs)})</span></div>
+      <div class="k">年龄</div><div class="v">${it.ageDays} 天</div>
+    </div>
+    <canvas id="d-curve" width="800" height="300"></canvas>
+    <div class="legend">实线 = 保持率衰减；两条虚线是复习窗口上下沿；圆点是此刻</div>`;
+
+  drawCurve(it);
+  $('#d-actions').innerHTML = `
+    <button data-act="used">记住（used）</button>
+    <button data-act="miss">没接住（miss）</button>
+    <button data-act="corrected" class="danger">记错了（corrected）</button>
+    <button data-act="pin">${it.pinned ? '取消钉住' : '钉住'}</button>
+    <button data-act="save-text">保存文本</button>
+    <button data-act="archive" class="danger">归档</button>`;
+
+  $('#d-actions').onclick = async (e) => {
+    const btn = e.target.closest('button');
+    if (!btn) return;
+    const act = btn.dataset.act;
+    try {
+      if (act === 'save-text') {
+        const text = $('#d-text').value.trim();
+        const r = await api('/api/item/action', { method: 'POST', body: { id: it.id, action: 'edit', value: text } });
+        state.current = r.item;
+        toast('文本已保存');
+      } else if (act === 'pin') {
+        const r = await api('/api/item/action', { method: 'POST', body: { id: it.id, action: 'pin', value: !it.pinned } });
+        state.current = r.item;
+        renderDrawer(r.item);
+        toast(r.item.pinned ? '已钉住，不再自动注入' : '已取消钉住');
+      } else if (act === 'archive') {
+        await api('/api/item/action', { method: 'POST', body: { id: it.id, action: 'archive', value: '手动归档' } });
+        $('#drawer').classList.remove('on');
+        toast('已归档');
+      } else {
+        const r = await api('/api/item/action', { method: 'POST', body: { id: it.id, action: 'review', value: act } });
+        state.current = r.item;
+        renderDrawer(r.item);
+        toast(`已记为 ${act}`);
+      }
+      await refresh();
+    } catch (err) { toast('✗ ' + err.message); }
+  };
+}
+
+function drawCurve(it) {
+  const cv = $('#d-curve');
+  if (!cv) return;
+  const ctx = cv.getContext('2d');
+  const W = cv.width, H = cv.height, P = 34;
+  const ss = Math.max(it.ssDays, 0.1);
+  const maxDays = Math.max(30, ss * 3.2);
+  const hi = state.params.curve.window.hi, lo = state.params.curve.window.lo;
+
+  ctx.clearRect(0, 0, W, H);
+  const X = (d) => P + (d / maxDays) * (W - P * 1.4);
+  const Y = (r) => H - P - r * (H - P * 1.6);
+
+  // 网格
+  ctx.strokeStyle = '#232935'; ctx.lineWidth = 1;
+  for (let i = 0; i <= 4; i++) {
+    const y = P + (i / 4) * (H - P * 1.6);
+    ctx.beginPath(); ctx.moveTo(P, y); ctx.lineTo(W - P * 0.4, y); ctx.stroke();
+    ctx.fillStyle = '#5d6675'; ctx.font = '11px ui-monospace';
+    ctx.fillText((1 - i / 4).toFixed(1), 4, y + 4);
+  }
+
+  // 窗口
+  ctx.setLineDash([4, 4]);
+  ctx.strokeStyle = '#3d5a3a'; ctx.beginPath(); ctx.moveTo(P, Y(hi)); ctx.lineTo(W - P * 0.4, Y(hi)); ctx.stroke();
+  ctx.strokeStyle = '#5a3d3d'; ctx.beginPath(); ctx.moveTo(P, Y(lo)); ctx.lineTo(W - P * 0.4, Y(lo)); ctx.stroke();
+  ctx.setLineDash([]);
+
+  // 衰减曲线
+  ctx.strokeStyle = '#6aa4ff'; ctx.lineWidth = 2; ctx.beginPath();
+  for (let i = 0; i <= 120; i++) {
+    const d = (i / 120) * maxDays;
+    const r = Math.exp(-d / ss);
+    const x = X(d), y = Y(r);
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+
+  // 此刻
+  const nowD = Math.min((Date.now() - (it.lastReviewAt || it.createdAt)) / 86400000, maxDays);
+  const x = X(nowD), y = Y(it.rs);
+  ctx.fillStyle = it.risk === 'fresh' ? '#3ecf8e' : it.risk === 'due' ? '#e8d15a' : '#ff6b6b';
+  ctx.beginPath(); ctx.arc(x, y, 5, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = '#0f1115'; ctx.lineWidth = 2; ctx.stroke();
+}
+
+// ---------- 调参 ----------
+const PARAM_SPEC = [
+  { g: '曲线', items: [
+    { p: 'curve.window.hi', l: '复习窗口上沿', h: 'RS 降到这个值时该复习。0.368 = 1/e，此时"下次 = SS"', t: 'num', step: 0.01, min: 0.01, max: 0.99 },
+    { p: 'curve.window.lo', l: '复习窗口下沿', h: 'RS 低于它算错过窗口，必须小于上沿', t: 'num', step: 0.01, min: 0.01, max: 0.99 },
+    { p: 'curve.ssGrowth', l: 'SS 增长倍数', h: '每次成功复习 SS 乘以它', t: 'num', step: 0.1, min: 1.01 },
+    { p: 'curve.ssCapDays', l: 'SS 封顶（天）', h: '超过后不再增长，防止"一万年后再见"', t: 'num', step: 1, min: 1 },
+    { p: 'curve.dormant.missRounds', l: '转 dormant 的 miss 次数', h: '连续这么多次到期都没被接住就休眠', t: 'num', step: 1, min: 1 },
+    { p: 'curve.dormant.rsBelow', l: 'RS 危险线', h: '只用于页面风险标色，不触发状态转移', t: 'num', step: 0.01, min: 0 },
+    { p: 'curve.learning.minutes', l: 'learning 间隔（分钟）', h: '逗号分隔，如 10,60,540', t: 'arr' },
+  ]},
+  { g: '注入预算', items: [
+    { p: 'budget.maxPerTurn', l: '每轮最多几条', h: '', t: 'num', step: 1, min: 0 },
+    { p: 'budget.maxTokens', l: '每轮 token 上限', h: '', t: 'num', step: 10, min: 1 },
+    { p: 'budget.cooldownMinutes', l: '冷却（分钟）', h: '同一条在此时间内不会重复注入', t: 'num', step: 30, min: 0 },
+  ]},
+  { g: '抽取', items: [
+    { p: 'extract.everyMessages', l: '每多少条消息抽一次', h: '', t: 'num', step: 1, min: 1 },
+    { p: 'extract.maxPerBatch', l: '单批最多产出', h: '', t: 'num', step: 1, min: 1 },
+  ]},
+  { g: '评估', items: [
+    { p: 'eval.maxFactorPerUpdate', l: 'SS 单次变化上限', h: '防止把 ssGrowth 设成 100 后一次复习把记忆锁死', t: 'num', step: 0.5, min: 1 },
+    { p: 'eval.correctionPatterns', l: '纠错线索', h: '逗号分隔；命中即视为用户在否定这条记忆', t: 'arrStr' },
+  ]},
+  { g: '按 kind 的初始 SS（天）', items: KIND_ORDER.map((k) => ({ p: `kinds.${k}.ssInitDays`, l: k, h: '', t: 'num', step: 0.5, min: 0.1 })) },
+];
+
+function getPath(obj, path) { return path.split('.').reduce((o, k) => (o == null ? undefined : o[k]), obj); }
+function setPath(obj, path, val) {
+  const parts = path.split('.');
+  let cur = obj;
+  for (let i = 0; i < parts.length - 1; i++) {
+    if (cur[parts[i]] == null || typeof cur[parts[i]] !== 'object') cur[parts[i]] = {};
+    cur = cur[parts[i]];
+  }
+  cur[parts[parts.length - 1]] = val;
+}
+
+function buildParamGroups() {
+  const root = $('#param-groups');
+  root.innerHTML = '';
+  for (const grp of PARAM_SPEC) {
+    const box = document.createElement('div');
+    box.className = 'group';
+    box.innerHTML = `<h3>${esc(grp.g)}</h3>`;
+    for (const it of grp.items) {
+      const v = getPath(paramDraft, it.p);
+      const row = document.createElement('div');
+      row.className = 'row';
+      let ctl;
+      if (it.t === 'num') {
+        ctl = `<input type="number" step="${it.step}" min="${it.min ?? ''}" value="${v}" data-p="${it.p}">`;
+      } else if (it.t === 'arr') {
+        ctl = `<input type="text" style="width:200px" value="${(v || []).join(',')}" data-p="${it.p}" data-arr="num">`;
+      } else {
+        ctl = `<input type="text" style="width:320px" value="${(v || []).join(',')}" data-p="${it.p}" data-arr="str">`;
+      }
+      row.innerHTML = `<div><div class="lbl">${esc(it.l)}</div>${it.h ? `<div class="hint">${esc(it.h)}</div>` : ''}</div>
+        <div class="ctl">${ctl}</div>`;
+      box.appendChild(row);
+    }
+    root.appendChild(box);
+  }
+  root.addEventListener('input', (e) => {
+    const el = e.target.closest('[data-p]');
+    if (!el) return;
+    const p = el.dataset.p;
+    let v;
+    if (el.dataset.arr === 'num') v = el.value.split(',').map((s) => Number(s.trim())).filter((n) => Number.isFinite(n));
+    else if (el.dataset.arr === 'str') v = el.value.split(',').map((s) => s.trim()).filter(Boolean);
+    else v = Number(el.value);
+    setPath(paramDraft, p, v);
+  });
+}
+
+function collectPatch() {
+  // 只提交 PARAM_SPEC 里声明过的字段，避免把 version 之类带进 patch
+  const patch = {};
+  for (const grp of PARAM_SPEC) for (const it of grp.items) setPath(patch, it.p, getPath(paramDraft, it.p));
+  return patch;
+}
+
+// ---------- 事件 ----------
+$('#btn-refresh').onclick = () => refresh().then(() => toast('已刷新'));
+
+document.querySelectorAll('nav.tabs button').forEach((b) => {
+  b.onclick = () => {
+    document.querySelectorAll('nav.tabs button').forEach((x) => x.classList.toggle('on', x === b));
+    document.querySelectorAll('.view').forEach((v) => v.classList.toggle('on', v.id === `view-${b.dataset.tab}`));
+  };
+});
+
+$('#filters').onclick = (e) => {
+  const chip = e.target.closest('.chip');
+  if (!chip) return;
+  state.f.state = chip.dataset.state;
+  document.querySelectorAll('#filters .chip').forEach((c) => c.classList.toggle('on', c === chip));
+  loadItems();
+};
+$('#f-kind').onchange = (e) => { state.f.kind = e.target.value; loadItems(); };
+$('#f-key').onchange = (e) => { state.f.key = e.target.value; loadItems(); };
+$('#f-sort').onchange = (e) => { state.f.sort = e.target.value; loadItems(); };
+$('#f-q').oninput = (e) => { state.f.q = e.target.value; loadItems(); };
+$('#d-close').onclick = () => $('#drawer').classList.remove('on');
+
+$('#btn-add').onclick = async () => {
+  const key = prompt('会话 key（如 private:3439395109 / group:1003685866）', state.f.key || '');
+  if (!key) return;
+  const kind = prompt('kind（fact / preference / event / relation / slang / vow）', 'fact');
+  if (!kind) return;
+  const text = prompt('内容（一条可判真假的事实）', '');
+  if (!text) return;
+  try {
+    await api('/api/add', { method: 'POST', body: { key, kind, text } });
+    toast('已新增');
+    refresh();
+  } catch (err) { toast('✗ ' + err.message); }
+};
+
+$('#btn-preview').onclick = async () => {
+  const out = $('#preview-out');
+  out.hidden = false;
+  try {
+    const r = await api('/api/params/preview', { method: 'POST', body: { patch: collectPatch() } });
+    if (!r.ok) { out.innerHTML = `<div class="err">✗ ${esc(r.errors.join('；'))}</div>`; return; }
+    const lines = [
+      `会新涌出 <b>${r.newlyDue}</b> 条到期，<b>${r.pushedAway}</b> 条被推远`,
+      ...r.samples.map((s) => `· ${esc(s.kind)} ${esc(s.text)}`),
+      `共 ${r.diff.length} 项变更`,
+    ];
+    out.innerHTML = `<div class="group"><h3>试算结果（未保存）</h3>
+      <div style="padding:10px 14px; font-size:13px; line-height:1.9">${lines.join('<br>')}</div></div>`;
+  } catch (err) { out.innerHTML = `<div class="err">✗ ${esc(err.message)}</div>`; }
+};
+
+async function saveParams(recompute) {
+  try {
+    const r = await api('/api/params/save', { method: 'POST', body: { patch: collectPatch(), recompute } });
+    toast(`已保存 v${r.version}（${r.diff.length} 项变更）${recompute ? '，已全量重算' : ''}`);
+    state.params = null;
+    await refresh();
+  } catch (err) { toast('✗ ' + err.message); }
+}
+$('#btn-save').onclick = () => saveParams(false);
+$('#btn-recompute').onclick = () => {
+  if (!confirm('按新参数把所有条目的下次唤醒全部重排？这一步可能一次性推出一批到期记忆。')) return;
+  saveParams(true);
+};
+
+async function refresh() {
+  await loadOverview();
+  await loadItems();
+}
+
+refresh().catch((e) => { $('#meta').textContent = '加载失败：' + e.message; });
+setInterval(() => { loadOverview().catch(() => {}); }, 30000);
+</script>
+</body>
+</html>
