@@ -1,4 +1,4 @@
-# dsh-memory-curve
+# dsh-forgetting-curve
 
 遗忘曲线记忆插件，给 DeepSeek Harness 加一层**带强度衰减与复习调度的长期记忆**。
 
@@ -26,10 +26,10 @@
 
 ```sh
 # 本地目录安装
-dsh plugin --profile desktop add "F:\dsh my own skill\dsh-memory-curve"
+dsh plugin --profile desktop add "F:\dsh my own skill\dsh-forgetting-curve"
 
 # 或者从 npm（发布后）
-dsh plugin --profile desktop add dsh-memory-curve
+dsh plugin --profile desktop add dsh-forgetting-curve
 ```
 
 装完重启 DSH。插件注册进宿主后对**所有会话**生效——包括 QQ 桥接的会话，因为它跑的也是 DSH 会话。
@@ -50,7 +50,7 @@ dsh plugin --profile desktop add dsh-memory-curve
 装好后访问：
 
 ```
-<你的 DSH 地址>/plugins/dsh-memory-curve/
+<你的 DSH 地址>/plugins/dsh-forgetting-curve/
 ```
 
 两个 tab：台账（每条记忆的 kind / state / rs / 下次唤醒，点开看衰减曲线）和调参（所有曲线参数，支持改完先试算再保存）。

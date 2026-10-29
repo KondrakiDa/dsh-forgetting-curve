@@ -4,5 +4,5 @@
 # v0.2 会在这里加一个带 volatile 字段的 schema，让参数能在 DSH 设置页里改。
 - insert:
     - id: memory-curve
-      name: dsh-memory-curve
+      name: dsh-forgetting-curve
       config: {}

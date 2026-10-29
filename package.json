@@ -1,5 +1,5 @@
 {
-  "name": "dsh-memory-curve",
+  "name": "dsh-forgetting-curve",
   "version": "0.1.0",
   "description": "遗忘曲线记忆：给 DSH 加一层带强度衰减与复习调度的长期记忆。决定「什么时候该想起哪件旧事」，而不是「记住什么」。按艾宾浩斯节奏分配每轮的注入带宽，带本地台账与调参页。",
   "type": "module",
@@ -25,6 +25,14 @@
   ],
   "license": "MIT",
   "author": "Kondraki Da",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/KondrakiDa/dsh-forgetting-curve.git"
+  },
+  "homepage": "https://github.com/KondrakiDa/dsh-forgetting-curve#readme",
+  "bugs": {
+    "url": "https://github.com/KondrakiDa/dsh-forgetting-curve/issues"
+  },
   "engines": {
     "node": ">=22.19"
   },
@@ -53,7 +61,7 @@
     "v": 1,
     "title": {
       "zh": "遗忘曲线记忆",
-      "en": "Memory Curve"
+      "en": "Forgetting Curve"
     },
     "icon": "brain",
     "description": {
