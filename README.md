@@ -25,14 +25,12 @@
 ## 装
 
 ```sh
-# 本地目录安装
-dsh plugin --profile desktop add "F:\dsh my own skill\dsh-forgetting-curve"
-
-# 或者从 npm（发布后）
 dsh plugin --profile desktop add dsh-forgetting-curve
 ```
 
-装完重启 DSH。插件注册进宿主后对**所有会话**生效——包括 QQ 桥接的会话，因为它跑的也是 DSH 会话。
+`desktop` 换成你实际的 profile 名。装完**重启 DSH**。插件注册进宿主后对**所有会话**生效——包括 QQ 桥接的会话，因为它跑的也是 DSH 会话。
+
+装好后访问 `http://127.0.0.1:<端口>/plugins/dsh-forgetting-curve/` 看台账。
 
 ## 四个工具
 
